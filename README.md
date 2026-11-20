@@ -3,7 +3,7 @@
 Unified reporting dashboard for ranked-choice-voting polls of the 2028 GOP
 presidential nomination (and related contests), built from JotForm exports.
 
-**Live dashboard:** https://preferential-primaries.github.io/rcv-dashboard/
+**Live dashboard:** https://preferential-primaries.github.io/rank-poll-dashboard/
 
 ## What's here
 
