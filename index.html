@@ -300,7 +300,7 @@ const COLS={
 };
 function renderCrosstab(idx){
   const rk=$("ctRow").value, ck=$("ctCol").value, mode=$("ctMode").value;
-  const dim=DIMS[rk], col=COLS[ck];
+  const dim=DIMS[rk]||DIMS.tribe, col=COLS[ck]||COLS.gop;
   const isCand=!!col.kind;
   const rows=new Map(), cols=new Map(), rowPop=new Map(), rowMembers=new Map();
   let excluded=0;
@@ -516,13 +516,13 @@ function renderMethods(){
 
 function renderAll(){
   const idx=filteredIdx();
-  renderOverview(idx);
-  renderCrosstab(idx);
-  renderIRV(idx);
-  renderCandidate(idx);
+  for(const fn of [renderOverview,renderCrosstab,renderIRV,renderCandidate]){
+    try{ fn(idx); }catch(e){ console.error("render failed:",fn.name,e); }
+  }
 }
-function fillSelect(el, values, labelFn){
-  el.innerHTML='<option value="">'+(el.dataset.all||"All")+"</option>"+values.map(v=>`<option value="${v}">${labelFn?labelFn(v):v}</option>`).join("");
+function fillSelect(el, values, labelFn, includeAll){
+  const all=(includeAll===false)?"":'<option value="">'+(el.dataset.all||"All")+"</option>";
+  el.innerHTML=all+values.map(v=>`<option value="${v}">${labelFn?labelFn(v):v}</option>`).join("");
 }
 async function init(){
   try{
@@ -547,8 +547,8 @@ async function init(){
   fillSelect($("fState"), [...new Set(R.map(x=>x.state).filter(Boolean))].sort());
   fillSelect($("fGender"), [...new Set(R.map(x=>x.gender).filter(Boolean))].sort());
   fillSelect($("fAge"), [...new Set(R.map(x=>x.age).filter(Boolean))].sort());
-  fillSelect($("ctRow"), Object.keys(DIMS), k=>DIMS[k].label);
-  fillSelect($("ctCol"), Object.keys(COLS), k=>COLS[k].label);
+  fillSelect($("ctRow"), Object.keys(DIMS), k=>DIMS[k].label, false);
+  fillSelect($("ctCol"), Object.keys(COLS), k=>COLS[k].label, false);
   $("ctRow").value="tribe"; $("ctCol").value="gop";
   $("cdSel").innerHTML=G.candidates.map((c,i)=>`<option value="${i}">${c}</option>`).join("");
   $("cdSel").value=G.candidates.indexOf("JD Vance");
