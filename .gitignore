@@ -1,0 +1,4 @@
+# Raw JotForm exports contain respondent IPs — never commit them.
+raw/
+__pycache__/
+*.pyc

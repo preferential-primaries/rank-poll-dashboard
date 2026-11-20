@@ -1,0 +1,473 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>RCV Polling Dashboard — 2028 GOP Polls</title>
+<script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
+<style>
+  :root { --navy:#022553; --navy2:#265289; --crimson:#9A1220; --ink:#1a1a1a; --mut:#5a5a5a;
+          --line:#ddd; --bg:#f7f7f5; --card:#fff; --sel:#eaf0fa; }
+  * { box-sizing:border-box; }
+  body { margin:0; font-family:-apple-system,BlinkMacSystemFont,"Segoe UI",Roboto,Helvetica,Arial,sans-serif;
+         color:var(--ink); background:var(--bg); line-height:1.45; }
+  header { background:var(--navy); color:#fff; padding:22px 20px 16px; }
+  header h1 { margin:0 0 4px; font-size:26px; }
+  header p { margin:0; opacity:.85; font-size:14px; }
+  .wrap { max-width:1100px; margin:0 auto; padding:0 16px 40px; }
+  .filters { background:var(--card); border:1px solid var(--line); border-radius:8px; padding:12px 14px;
+             margin:16px 0; display:flex; flex-wrap:wrap; gap:10px 18px; align-items:flex-end; }
+  .filters label { font-size:12px; color:var(--mut); display:block; margin-bottom:3px; }
+  .filters select, .filters input { font-size:14px; padding:6px 8px; border:1px solid #bbb; border-radius:5px; background:#fff; }
+  .filters .n { margin-left:auto; font-size:15px; font-weight:600; color:var(--navy); }
+  .filters .n small { font-weight:400; color:var(--mut); }
+  button { font-size:14px; padding:7px 12px; border-radius:5px; border:1px solid var(--navy2);
+           background:#fff; color:var(--navy); cursor:pointer; }
+  button:hover { background:var(--sel); }
+  button.primary { background:var(--navy); color:#fff; }
+  .tabs { display:flex; gap:6px; margin:18px 0 0; flex-wrap:wrap; }
+  .tabs button { border:1px solid var(--line); border-bottom:none; border-radius:8px 8px 0 0;
+                 background:#eee; color:var(--ink); padding:9px 16px; }
+  .tabs button.active { background:var(--card); font-weight:600; color:var(--navy); }
+  .panel { background:var(--card); border:1px solid var(--line); border-radius:0 8px 8px 8px; padding:18px; display:none; }
+  .panel.active { display:block; }
+  .cards { display:flex; gap:12px; flex-wrap:wrap; margin-bottom:18px; }
+  .card { flex:1 1 140px; background:var(--bg); border:1px solid var(--line); border-radius:8px; padding:12px 14px; }
+  .card .v { font-size:26px; font-weight:700; color:var(--navy); }
+  .card .l { font-size:12px; color:var(--mut); text-transform:uppercase; letter-spacing:.04em; }
+  h2 { font-size:19px; margin:22px 0 8px; color:var(--navy); }
+  h2:first-child { margin-top:0; }
+  h3 { font-size:15px; margin:16px 0 6px; }
+  .grid2 { display:grid; grid-template-columns:1fr 1fr; gap:18px; }
+  @media (max-width:760px){ .grid2{ grid-template-columns:1fr; } }
+  .chartbox { position:relative; height:300px; }
+  .chartbox.tall { height:380px; }
+  table { border-collapse:collapse; width:100%; font-size:13.5px; margin:8px 0; }
+  th, td { border:1px solid var(--line); padding:6px 8px; text-align:right; }
+  th:first-child, td:first-child { text-align:left; }
+  th { background:var(--bg); font-weight:600; }
+  tr.total td { font-weight:700; background:var(--bg); }
+  .note { font-size:13px; color:var(--mut); }
+  .winner { background:#eef6ee; border:1px solid #b9d9b9; border-radius:8px; padding:12px 16px; margin:10px 0; }
+  .winner b { color:#1d5c1d; }
+  .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; }
+  .row label { font-size:12px; color:var(--mut); display:block; margin-bottom:3px; }
+  .row select { font-size:14px; padding:6px 8px; border:1px solid #bbb; border-radius:5px; }
+  #loading { padding:40px; text-align:center; color:var(--mut); }
+  .err { color:var(--crimson); font-weight:600; }
+  footer { margin-top:28px; font-size:13px; color:var(--mut); }
+  footer a { color:var(--navy2); }
+  details { margin:10px 0; }
+  details summary { cursor:pointer; font-weight:600; color:var(--navy); }
+  code { background:#f0f0f0; padding:1px 5px; border-radius:4px; font-size:12.5px; }
+</style>
+</head>
+<body>
+<header>
+  <div class="wrap" style="padding:0">
+    <h1>RCV Polling Dashboard</h1>
+    <p>Unified reporting across the 2028 GOP polls — February, April (Texas Senate run-off), and August 2026. <span id="headN"></span></p>
+  </div>
+</header>
+<div class="wrap">
+  <div id="loading">Loading poll data…</div>
+  <div id="app" style="display:none">
+    <div class="filters" id="filters">
+      <div><label>Poll</label>
+        <select id="fPoll"><option value="">All polls</option></select></div>
+      <div><label>From date</label><input type="date" id="fFrom"></div>
+      <div><label>To date</label><input type="date" id="fTo"></div>
+      <div><label>State</label><select id="fState"><option value="">All states</option></select></div>
+      <div><label>Gender</label><select id="fGender"><option value="">All</option></select></div>
+      <div><label>Age</label><select id="fAge"><option value="">All ages</option></select></div>
+      <button id="fReset">Reset filters</button>
+      <div class="n"><span id="fN"></span> <small>respondents in view</small></div>
+    </div>
+
+    <div class="tabs">
+      <button data-tab="overview" class="active">Overview</button>
+      <button data-tab="crosstab">Cross-tab</button>
+      <button data-tab="irv">Instant runoff</button>
+      <button data-tab="candidate">Candidate detail</button>
+      <button data-tab="methods">Data &amp; methods</button>
+    </div>
+
+    <div class="panel active" id="panel-overview">
+      <div class="cards" id="statCards"></div>
+      <div class="grid2">
+        <div><h2>GOP first choice</h2><div class="chartbox"><canvas id="chFirst"></canvas></div></div>
+        <div><h2>Tribe distribution</h2><div class="chartbox"><canvas id="chTribe"></canvas></div></div>
+      </div>
+      <div class="grid2">
+        <div><h2>Ideology (1–7)</h2><div class="chartbox"><canvas id="chIdeo"></canvas></div></div>
+        <div><h2>Respondents by poll</h2><div class="chartbox"><canvas id="chPoll"></canvas></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-crosstab">
+      <h2>Cross-tab builder</h2>
+      <div class="row">
+        <div><label>Rows</label><select id="ctRow"></select></div>
+        <div><label>Columns</label><select id="ctCol"></select></div>
+        <div><label>Show</label><select id="ctMode">
+          <option value="pct">Row % (with counts)</option>
+          <option value="n">Counts only</option>
+        </select></div>
+      </div>
+      <div id="ctTable"></div>
+      <p class="note" id="ctNote"></p>
+      <h3>Chart (row %)</h3>
+      <div class="chartbox tall"><canvas id="chCt"></canvas></div>
+    </div>
+
+    <div class="panel" id="panel-irv">
+      <h2>Instant-runoff tabulation (GOP nomination)</h2>
+      <div class="row">
+        <label style="display:flex;gap:6px;align-items:center;font-size:14px;color:var(--ink)">
+          <input type="checkbox" id="irvField"> Current field only (excludes the 5 candidates who left the race)</label>
+      </div>
+      <div id="irvOut"></div>
+      <p class="note">Ballots are counted from the ranked GOP lists in view. Each round, the candidate with the fewest votes is eliminated and their ballots transfer to the next ranked choice still standing. A candidate wins with strictly more than 50% of non-exhausted ballots. Ties for elimination are broken by fewest first-choice votes, then alphabetically. Candidates differ by poll: February offered 12 names, April 5, August 9 — mixed-poll runoffs pool all names on offer.</p>
+    </div>
+
+    <div class="panel" id="panel-candidate">
+      <h2>Candidate detail</h2>
+      <div class="row">
+        <div><label>Candidate</label><select id="cdSel"></select></div>
+      </div>
+      <div id="cdStats"></div>
+      <div class="grid2">
+        <div><h3>Rank distribution</h3><div class="chartbox"><canvas id="chCdRank"></canvas></div></div>
+        <div><h3>First-choice share by tribe</h3><div id="cdTribe"></div></div>
+      </div>
+    </div>
+
+    <div class="panel" id="panel-methods">
+      <h2>Data &amp; methods</h2>
+      <div id="methodsBody"></div>
+    </div>
+
+    <footer>
+      Static data as of Nov 20, 2026. Source files and the coding script live in this repo under
+      <code>data/</code> and <code>scripts/</code>. New polls are appended with the same coding —
+      see <code>docs/APPEND.md</code>.
+    </footer>
+  </div>
+</div>
+<script>
+let R=[], G={candidates:[],rankings:[]}, D={candidates:[],rankings:[]}, META={};
+let charts={};
+const POLL_LABEL={Feb2026:"Feb 2026",Apr2026:"Apr 2026 (TX)",Aug2026:"Aug 2026"};
+const NAVY="#022553", NAVY2="#265289", CRIMSON="#9A1220";
+const PALETTE=["#022553","#265289","#9A1220","#c25e3a","#2a7f62","#7a5aa6","#b08d2e","#4a9db8","#6b6b6b","#d98cb3","#8fae3e","#e07b39","#3a3a3a","#5b8dc9","#a63a50"];
+const $=id=>document.getElementById(id);
+const fmt=n=>n.toLocaleString("en-US");
+const pct=(a,b)=>b? (100*a/b).toFixed(1)+"%":"—";
+
+function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
+function barChart(id, labels, data, opts={}){
+  destroyChart(id);
+  const colors = labels.map((_,i)=>PALETTE[i%PALETTE.length]);
+  charts[id]=new Chart($(id),{type:"bar",
+    data:{labels, datasets:[{data, backgroundColor:opts.color||colors, borderWidth:0}]},
+    options:{indexAxis:opts.horizontal?"y":"x", responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{display:false},
+        tooltip:{callbacks:{label:c=>" "+fmt(c.parsed.x??c.parsed.y)}}},
+      scales:{x:{ticks:{precision:0}}, y:{ticks:{precision:0, autoSkip:false}}}}});
+}
+function stackedChart(id, labels, datasets){
+  destroyChart(id);
+  charts[id]=new Chart($(id),{type:"bar",
+    data:{labels, datasets},
+    options:{indexAxis:"y", responsive:true, maintainAspectRatio:false,
+      plugins:{legend:{position:"bottom", labels:{boxWidth:12, font:{size:11}}},
+        tooltip:{callbacks:{label:c=>" "+c.dataset.label+": "+c.parsed.x.toFixed(1)+"% ("+fmt(c.raw.n)+")"}}},
+      scales:{x:{stacked:true, max:100, ticks:{callback:v=>v+"%"}}, y:{stacked:true, ticks:{autoSkip:false}}}}});
+}
+
+function filteredIdx(){
+  const poll=$("fPoll").value, from=$("fFrom").value, to=$("fTo").value,
+        st=$("fState").value, g=$("fGender").value, a=$("fAge").value;
+  const out=[];
+  for(let i=0;i<R.length;i++){
+    const r=R[i];
+    if(poll && r.poll_source!==poll) continue;
+    if(from && r.submission_date<from) continue;
+    if(to && r.submission_date>to) continue;
+    if(st && r.state!==st) continue;
+    if(g && (r.gender||"")!==g) continue;
+    if(a && (r.age||"")!==a) continue;
+    out.push(i);
+  }
+  return out;
+}
+
+function countsOf(idx, get){
+  const m=new Map();
+  for(const i of idx){ const v=get(R[i]); if(v==null||v==="") continue; m.set(v,(m.get(v)||0)+1); }
+  return [...m.entries()].sort((a,b)=>b[1]-a[1]);
+}
+
+function renderOverview(idx){
+  const n=idx.length;
+  $("fN").textContent=fmt(n);
+  const polls=[...new Set(idx.map(i=>R[i].poll_source))];
+  const dates=idx.map(i=>R[i].submission_date).filter(Boolean).sort();
+  const fc=countsOf(idx,r=>r.gop_first_choice);
+  const top=fc[0];
+  $("statCards").innerHTML=
+    `<div class="card"><div class="v">${fmt(n)}</div><div class="l">Respondents</div></div>`+
+    `<div class="card"><div class="v">${polls.length}</div><div class="l">Poll${polls.length===1?"":"s"} in view</div></div>`+
+    `<div class="card"><div class="v">${dates.length?dates[0].slice(5):"—"}</div><div class="l">Earliest response</div></div>`+
+    `<div class="card"><div class="v">${dates.length?dates[dates.length-1].slice(5):"—"}</div><div class="l">Latest response</div></div>`+
+    `<div class="card"><div class="v">${top?top[0]:"—"}</div><div class="l">Top first choice${top?` · ${pct(top[1],n)}`:""}</div></div>`;
+  barChart("chFirst", fc.map(x=>x[0]), fc.map(x=>x[1]), {horizontal:true});
+  const tr=countsOf(idx,r=>r.primary_tribe);
+  barChart("chTribe", tr.map(x=>x[0]), tr.map(x=>x[1]), {horizontal:true});
+  const ideo=[1,2,3,4,5,6,7].map(v=>idx.filter(i=>R[i].ideology_1_7===v).length);
+  const ideoBlank=idx.filter(i=>R[i].ideology_1_7==null).length;
+  barChart("chIdeo", ["1","2","3","4","5","6","7","No answer"], [...ideo, ideoBlank], {color:NAVY2});
+  const pc=countsOf(idx,r=>POLL_LABEL[r.poll_source]||r.poll_source);
+  barChart("chPoll", pc.map(x=>x[0]), pc.map(x=>x[1]), {color:CRIMSON});
+}
+
+const DIMS={
+  tribe:{label:"Tribe", get:r=>r.primary_tribe, order:META.tribes||[]},
+  ideo:{label:"Ideology band", get:r=>r.ideology_1_7==null?"Not answered":r.ideology_1_7<=2?"Liberal (1–2)":r.ideology_1_7<=5?"Moderate (3–5)":"Conservative (6–7)", order:["Liberal (1–2)","Moderate (3–5)","Conservative (6–7)","Not answered"]},
+  gender:{label:"Gender", get:r=>r.gender||"Not answered", order:["Female","Male","Not answered"]},
+  age:{label:"Age", get:r=>r.age||"Not answered", order:[]},
+  state:{label:"State", get:r=>r.state||"Not answered", order:[]},
+  poll:{label:"Poll", get:r=>POLL_LABEL[r.poll_source]||r.poll_source, order:["Feb 2026","Apr 2026 (TX)","Aug 2026"]},
+};
+const COLS={
+  gop:{label:"GOP first choice", get:r=>r.gop_first_choice},
+  dem:{label:"Dem first choice (Aug only)", get:r=>r.dem_first_choice},
+  tariffFeb:{label:"Tariff support — Yes/No (Feb only)", get:r=>r.tariff_support},
+  tariffTx:{label:"Tariff top statement (TX only)", get:r=>r.tariff_top},
+  senate:{label:"Senate choice (TX only)", get:r=>r.senate_choice},
+  iran:{label:"Iran force (TX only)", get:r=>r.iran_force},
+  party:{label:"Party (TX only)", get:r=>r.party},
+  eminent:{label:"Eminent-domain ban (Feb only)", get:r=>r.eminent_domain_ban},
+};
+function renderCrosstab(idx){
+  const rk=$("ctRow").value, ck=$("ctCol").value, mode=$("ctMode").value;
+  const dim=DIMS[rk], col=COLS[ck];
+  const rows=new Map(), cols=new Map();
+  let excluded=0;
+  for(const i of idx){
+    const r=R[i], cv=col.get(r);
+    if(cv==null||cv===""){ excluded++; continue; }
+    const rv=dim.get(r);
+    if(!rows.has(rv)) rows.set(rv,new Map());
+    rows.get(rv).set(cv,(rows.get(rv).get(cv)||0)+1);
+    cols.set(cv,(cols.get(cv)||0)+1);
+  }
+  const colVals=[...cols.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
+  let rowVals=[...rows.keys()];
+  const ord=dim.order||[];
+  rowVals.sort((a,b)=>{
+    const ia=ord.indexOf(a), ib=ord.indexOf(b);
+    if(ia>=0&&ib>=0) return ia-ib;
+    if(ia>=0) return -1; if(ib>=0) return 1;
+    const ta=[...rows.get(a).values()].reduce((s,v)=>s+v,0), tb=[...rows.get(b).values()].reduce((s,v)=>s+v,0);
+    return tb-ta;
+  });
+  if(!rowVals.length||!colVals.length){
+    $("ctTable").innerHTML="<p>No data for this combination in the current view.</p>";
+    destroyChart("chCt"); $("ctNote").textContent=""; return;
+  }
+  let html="<table><tr><th>"+dim.label+" \\ "+col.label+"</th>"+colVals.map(c=>"<th>"+c+"</th>").join("")+"<th>Total</th></tr>";
+  const datasets=colVals.map((c,ci)=>({label:c, data:[], backgroundColor:PALETTE[ci%PALETTE.length]}));
+  for(const rv of rowVals){
+    const m=rows.get(rv), tot=[...m.values()].reduce((s,v)=>s+v,0);
+    html+="<tr><td>"+rv+"</td>";
+    colVals.forEach((c,ci)=>{
+      const v=m.get(c)||0;
+      datasets[ci].data.push({x:+(100*v/tot).toFixed(1), n:v});
+      html+="<td>"+(mode==="pct"? pct(v,tot)+" <span class='note'>("+fmt(v)+")</span>" : fmt(v))+"</td>";
+    });
+    html+="<td><b>"+fmt(tot)+"</b></td></tr>";
+  }
+  const grand=[...cols.values()].reduce((s,v)=>s+v,0);
+  html+="<tr class='total'><td>Total</td>"+colVals.map(c=>"<td>"+fmt(cols.get(c))+"</td>").join("")+"<td>"+fmt(grand)+"</td></tr></table>";
+  $("ctTable").innerHTML=html;
+  $("ctNote").textContent=excluded? fmt(excluded)+" respondent(s) in view have no value for “"+col.label+"” (question not asked in their poll, or not answered) and are excluded from this table.":"";
+  stackedChart("chCt", rowVals, datasets);
+}
+
+function runIRV(idx, fieldOnly){
+  const ballots=[];
+  for(const i of idx){
+    let b=(G.rankings[i]||[]).filter(e=>!fieldOnly||e[2]===1).map(e=>e[0]);
+    if(b.length) ballots.push(b);
+  }
+  const firstCount=new Map();
+  ballots.forEach(b=>firstCount.set(b[0],(firstCount.get(b[0])||0)+1));
+  const alive=new Set(ballots.flat());
+  const rounds=[];
+  let winner=null;
+  while(alive.size>1){
+    const tally=new Map([...alive].map(c=>[c,0]));
+    let active=0, exhausted=0;
+    for(const b of ballots){
+      const top=b.find(c=>alive.has(c));
+      if(top===undefined){ exhausted++; continue; }
+      tally.set(top,tally.get(top)+1); active++;
+    }
+    const sorted=[...tally.entries()].sort((a,b)=>b[1]-a[1]);
+    rounds.push({tally:new Map(sorted), active, exhausted});
+    if(sorted[0][1]>active/2){ winner=sorted[0][0]; break; }
+    const elim=[...tally.entries()].sort((a,b)=>
+      (a[1]-b[1]) || ((firstCount.get(a[0])||0)-(firstCount.get(b[0])||0)) || (G.candidates[b[0]].localeCompare(G.candidates[a[0]])))[0][0];
+    alive.delete(elim);
+  }
+  if(!winner && alive.size===1) winner=[...alive][0];
+  return {rounds, winner, ballots:ballots.length};
+}
+function renderIRV(idx){
+  const fieldOnly=$("irvField").checked;
+  const {rounds, winner, ballots}=runIRV(idx, fieldOnly);
+  if(!rounds.length){
+    $("irvOut").innerHTML="<p>No ranked GOP ballots in the current view.</p>"; return;
+  }
+  const cands=[...new Set(rounds.flatMap(r=>[...r.tally.keys()]))];
+  let html="";
+  if(winner!=null) html+=`<div class="winner"><b>Winner: ${G.candidates[winner]}</b> — ${fmt(ballots)} ballots in view${fieldOnly?" (current field only)":""}.</div>`;
+  else html+=`<div class="winner">No winner — ${fmt(ballots)} ballots in view.</div>`;
+  html+="<table><tr><th>Candidate</th>"+rounds.map((_,i)=>"<th>Round "+(i+1)+"</th>").join("")+"</tr>";
+  const elimOrder=[];
+  rounds.forEach((r,ri)=>{
+    const prev=ri?rounds[ri-1].tally:new Map(cands.map(c=>[c,0]));
+    for(const c of prev.keys()) if(!r.tally.has(c)) elimOrder.push(c);
+  });
+  const order=[...(winner!=null?[winner]:[]), ...elimOrder.reverse(), ...cands.filter(c=>c!==winner&&!elimOrder.includes(c))];
+  for(const c of order){
+    html+="<tr><td>"+G.candidates[c]+(c===winner?" ★":"")+"</td>";
+    rounds.forEach(r=>{
+      const v=r.tally.get(c);
+      html+="<td>"+(v===undefined?"—":fmt(v)+" <span class='note'>("+pct(v,r.active)+")</span>")+"</td>";
+    });
+    html+="</tr>";
+  }
+  html+="<tr class='total'><td>Active ballots</td>"+rounds.map(r=>"<td>"+fmt(r.active)+"</td>").join("")+"</tr>";
+  html+="<tr><td>Exhausted</td>"+rounds.map(r=>"<td>"+fmt(r.exhausted)+"</td>").join("")+"</tr></table>";
+  $("irvOut").innerHTML=html;
+}
+
+function renderCandidate(idx){
+  const ci=+($("cdSel").value||0);
+  const name=G.candidates[ci];
+  let ranked=0, first=0, rankSum=0;
+  const dist=new Map();
+  for(const i of idx){
+    const e=(G.rankings[i]||[]).find(x=>x[0]===ci);
+    if(!e) continue;
+    ranked++; rankSum+=e[1];
+    dist.set(e[1],(dist.get(e[1])||0)+1);
+    if(e[1]===1) first++;
+  }
+  $("cdStats").innerHTML=`<div class="cards">
+    <div class="card"><div class="v">${fmt(ranked)}</div><div class="l">Ranked ${name} (of ${fmt(idx.length)} in view)</div></div>
+    <div class="card"><div class="v">${pct(first,idx.length)}</div><div class="l">First-choice share in view</div></div>
+    <div class="card"><div class="v">${ranked?(rankSum/ranked).toFixed(2):"—"}</div><div class="l">Mean rank among rankers</div></div></div>`;
+  const maxRank=Math.max(0,...dist.keys());
+  const labels=[], data=[];
+  for(let r=1;r<=maxRank;r++){ labels.push("Rank "+r); data.push(dist.get(r)||0); }
+  barChart("chCdRank", labels, data, {color:NAVY2});
+  const tribes=[...new Set(idx.map(i=>R[i].primary_tribe))];
+  let html="<table><tr><th>Tribe</th><th>First-choice share</th><th>n</th></tr>";
+  const trows=tribes.map(t=>{
+    const members=idx.filter(i=>R[i].primary_tribe===t);
+    const f=members.filter(i=>R[i].gop_first_choice===name).length;
+    return {t, f, n:members.length, s:members.length?f/members.length:0};
+  }).sort((a,b)=>b.s-a.s);
+  for(const r of trows) html+=`<tr><td>${r.t}</td><td>${pct(r.f,r.n)}</td><td>${fmt(r.n)}</td></tr>`;
+  html+="</table>";
+  $("cdTribe").innerHTML=html;
+}
+
+function renderMethods(){
+  const p=META.polls||{};
+  let rows="";
+  const desc={Feb2026:"2028 GOP presidential nomination — 12-candidate ballot, 1–5 ideology scale, pick-up-to-4 priorities.",
+    Apr2026:"Texas GOP US Senate run-off poll (Paxton vs Cornyn) with a 5-candidate presidential ballot; also asked Iran, tariffs, and election-reform statements.",
+    Aug2026:"2028 GOP presidential nomination (live poll) — 9-candidate GOP ballot plus a 9-name Democratic ballot and ranked election-integrity concerns."};
+  for(const k of ["Feb2026","Apr2026","Aug2026"]){
+    if(!p[k]) continue;
+    rows+=`<tr><td>${POLL_LABEL[k]}</td><td>${fmt(p[k].n)}</td><td>${p[k].min_date} – ${p[k].max_date}</td><td>${desc[k]||""}</td></tr>`;
+  }
+  $("methodsBody").innerHTML=`
+  <h3>Polls in this dashboard</h3>
+  <table><tr><th>Poll</th><th>n</th><th>Dates</th><th>What it asked</th></tr>${rows}</table>
+  <h3>Tribe model</h3>
+  <p>${META.model||""}</p>
+  <p>Tribe scores use policy priorities, ideology, and (August only) election concerns. Candidate rankings are <b>never</b> used to assign tribes, so cross-tabs of tribe by candidate choice are not circular.</p>
+  <h3>Recoding notes</h3>
+  <ul>
+    <li><b>Uniform recoding.</b> All three polls are coded under the same live 10-tribe model. The old Respondents table used a different historical approximation for Feb/Apr; 53 of 1,438 historical respondents change primary tribe under the uniform model (mostly into Traditional). August reproduces the live script exactly (180/180 affinity scores identical).</li>
+    <li><b>Unranked picks.</b> Feb/Apr priorities were pick-up-to-4 sets with no ranking, so each pick carries equal weight. August picks were ranked 1–5 with weights 1.00 / 0.80 / 0.65 / 0.52 / 0.42.</li>
+    <li><b>Ideology.</b> February used a 1–5 scale, rescaled to 1–7 (1→1, 2→2, 3→4, 4→6, 5→7). April and August were already 1–7.</li>
+    <li><b>Candidates.</b> All candidates as ranked are kept. Five February names (Bannon, Gabbard, Haley, Kemp, Ramaswamy) are flagged as outside the current field; the runoff tab can exclude them.</li>
+    <li><b>Ballot glitches.</b> Five ranking cells contained a stray “NaN” from JotForm (four trailing after a complete 12-rank Feb ballot; one mid-ballot TX glitch). The phantom entries were dropped and ranks compressed — no real preference was removed.</li>
+    <li><b>Privacy.</b> This dashboard contains no names, emails, or IP addresses — only opaque submission IDs, states, and demographic bands.</li>
+  </ul>`;
+}
+
+function renderAll(){
+  const idx=filteredIdx();
+  renderOverview(idx);
+  renderCrosstab(idx);
+  renderIRV(idx);
+  renderCandidate(idx);
+}
+function fillSelect(el, values, labelFn){
+  el.innerHTML='<option value="">'+(el.dataset.all||"All")+"</option>"+values.map(v=>`<option value="${v}">${labelFn?labelFn(v):v}</option>`).join("");
+}
+async function init(){
+  try{
+    const [r,g,d,m]=await Promise.all([
+      fetch("data/respondents.json").then(x=>x.json()),
+      fetch("data/gop_rankings.json").then(x=>x.json()),
+      fetch("data/dem_rankings.json").then(x=>x.json()),
+      fetch("data/meta.json").then(x=>x.json())]);
+    R=r; G=g; D=d; META=m;
+  }catch(e){
+    $("loading").innerHTML='<p class="err">Could not load the poll data files.</p><p>If you opened this file directly from disk, serve it over HTTP instead (GitHub Pages works) — browsers block data fetches from file:// pages.</p>';
+    return;
+  }
+  DIMS.tribe.order=META.tribes||[];
+  $("headN").textContent="· "+fmt(R.length)+" respondents · "+META.polls.Feb2026.min_date+" – "+META.polls.Feb2026.max_date+" + Aug 2026";
+  const dates=R.map(x=>x.submission_date).filter(Boolean).sort();
+  $("fFrom").min=dates[0]; $("fFrom").max=dates[dates.length-1];
+  $("fTo").min=dates[0]; $("fTo").max=dates[dates.length-1];
+  fillSelect($("fPoll"), Object.keys(META.polls), k=>POLL_LABEL[k]+" ("+fmt(META.polls[k].n)+")");
+  fillSelect($("fState"), [...new Set(R.map(x=>x.state).filter(Boolean))].sort());
+  fillSelect($("fGender"), [...new Set(R.map(x=>x.gender).filter(Boolean))].sort());
+  fillSelect($("fAge"), [...new Set(R.map(x=>x.age).filter(Boolean))].sort());
+  fillSelect($("ctRow"), Object.keys(DIMS), k=>DIMS[k].label);
+  fillSelect($("ctCol"), Object.keys(COLS), k=>COLS[k].label);
+  $("ctRow").value="tribe"; $("ctCol").value="gop";
+  $("cdSel").innerHTML=G.candidates.map((c,i)=>`<option value="${i}">${c}</option>`).join("");
+  $("cdSel").value=G.candidates.indexOf("JD Vance");
+  ["fPoll","fFrom","fTo","fState","fGender","fAge"].forEach(id=>$(id).addEventListener("change",renderAll));
+  ["ctRow","ctCol","ctMode"].forEach(id=>$(id).addEventListener("change",()=>renderCrosstab(filteredIdx())));
+  $("irvField").addEventListener("change",()=>renderIRV(filteredIdx()));
+  $("cdSel").addEventListener("change",()=>renderCandidate(filteredIdx()));
+  $("fReset").addEventListener("click",()=>{
+    ["fPoll","fState","fGender","fAge"].forEach(id=>$(id).value="");
+    $("fFrom").value=""; $("fTo").value=""; renderAll();
+  });
+  document.querySelectorAll(".tabs button").forEach(b=>b.addEventListener("click",()=>{
+    document.querySelectorAll(".tabs button").forEach(x=>x.classList.remove("active"));
+    document.querySelectorAll(".panel").forEach(x=>x.classList.remove("active"));
+    b.classList.add("active"); $("panel-"+b.dataset.tab).classList.add("active");
+  }));
+  renderMethods();
+  $("loading").style.display="none";
+  $("app").style.display="block";
+  renderAll();
+}
+init();
+</script>
+</body>
+</html>
