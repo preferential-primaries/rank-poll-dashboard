@@ -32,6 +32,14 @@ presidential nomination (and related contests), built from JotForm exports.
 | Apr 2026 (TX) | 327 | Mar 26 – May 26, 2026 | TX Senate run-off + 5-candidate presidential ballot; Iran, tariffs, election statements |
 | Aug 2026 | 19 | Jul 22 – Aug 6, 2026 | 9-candidate GOP ballot + 9-name Democratic ballot; ranked election concerns |
 
+## About the sample
+
+Respondents came from opt-in internet responses to JotForm surveys shared
+online. This was **not a scientific sample**: respondents self-selected,
+there was no probability sampling, and results are not weighted to any
+population. Treat the numbers as a read on the people who chose to respond,
+not as representative of any electorate.
+
 ## Tribe model
 
 Tribe scores follow the live presidential model, applied uniformly to all
