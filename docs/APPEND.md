@@ -39,7 +39,9 @@ new form and adjust if the wording changed:
   silently ignored. If the form adds an option, add its text and a
   10-number affinity vector to `POLICY_AFFINITY` first (same tribe order).
 - **Ideology scale** — if the form uses 1–5, add a rescale entry like
-  `FEB_RESCALE`. If it uses 1–7, nothing is needed.
+  `FEB_RESCALE`. If it uses 1–7, nothing is needed. The worded label
+  (`ideology_label`: 1 Very Liberal … 7 Very Conservative) is derived
+  automatically from `IDEOLOGY_LABELS`.
 - **GOP ranking** — matched on `"Republican Presidential Nomination"` or
   `"2028 GOP nominee"`. New candidates just appear; add current-field
   names to `CURRENT_GOP_FIELD` if they belong in the "current field" set.
@@ -51,6 +53,12 @@ new form and adjust if the wording changed:
 - **Poll-specific questions** (Senate, Iran, tariffs, etc.) — add a branch
   in `code_respondent()` and a column in the CSV field list if the
   dashboard should cross-tab on them.
+- **Top 3 and denominators** — automatic, no manual step. The builder
+  flags `top3` on every ranking row, records each respondent's top-3
+  list, and writes `candidate_availability.json` (which candidates each
+  poll offered). The dashboard's %s use the offered-respondents
+  denominator from that file, so a candidate only offered in one poll is
+  never measured against all polls.
 
 ## 4. Build, validate, publish
 
