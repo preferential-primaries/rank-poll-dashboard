@@ -1,4 +1,4 @@
-# RCV Polling Dashboard
+# Presidential Primary Polling Dashboard
 
 Unified reporting dashboard for ranked-choice-voting polls of the 2028 GOP
 presidential nomination (and related contests), built from JotForm exports.

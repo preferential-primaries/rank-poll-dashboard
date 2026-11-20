@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
-<title>RCV Polling Dashboard — 2028 GOP Polls</title>
+<title>Presidential Primary Polling Dashboard</title>
 <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.1/dist/chart.umd.min.js"></script>
 <style>
   :root { --navy:#022553; --navy2:#265289; --crimson:#9A1220; --ink:#1a1a1a; --mut:#5a5a5a;
@@ -68,8 +68,8 @@
 <body>
 <header>
   <div class="wrap" style="padding:0">
-    <h1>RCV Polling Dashboard</h1>
-    <p>Unified reporting across the 2028 GOP polls — February, April (Texas Senate run-off), and August 2026. <span id="headN"></span></p>
+    <h1>Presidential Primary Polling Dashboard</h1>
+    <p>Unified reporting across Presidential Primary Polls <span id="subDates"></span> <span id="headN"></span></p>
   </div>
 </header>
 <div class="wrap">
@@ -154,7 +154,7 @@
     </div>
 
     <footer>
-      Static data as of Nov 20, 2026. Source files and the coding script live in this repo under
+      Data built <span id="buildDate">Nov 20, 2026</span>. Source files and the coding script live in this repo under
       <code>data/</code> and <code>scripts/</code>. New polls are appended with the same coding —
       see <code>docs/APPEND.md</code>.
     </footer>
@@ -169,6 +169,9 @@ const PALETTE=["#022553","#265289","#9A1220","#c25e3a","#2a7f62","#7a5aa6","#b08
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString("en-US");
 const pct=(a,b)=>b? (100*a/b).toFixed(1)+"%":"—";
+const DATA_V="20261120c"; // bump on every data publish so browsers fetch fresh files
+const MONTHS=["January","February","March","April","May","June","July","August","September","October","November","December"];
+function fmtDate(iso){ const [y,m,d]=iso.split("-").map(Number); return MONTHS[m-1]+" "+d+", "+y; }
 const IDEO_LABEL={1:"Very Liberal",2:"Liberal",3:"Somewhat Liberal",4:"Moderate",5:"Somewhat Conservative",6:"Conservative",7:"Very Conservative"};
 let ovMode="first";
 // Respondents in idx whose poll offered this candidate — the dynamic
@@ -335,6 +338,19 @@ function renderCrosstab(idx){
     destroyChart("chCt"); $("ctNote").textContent=""; return;
   }
   const offTotal=c=>isCand?offeredIdx(idx,col.kind,c).length:0;
+  // Heat-map scale: the largest displayed value across data cells; each cell
+  // is shaded light-to-dark blue in proportion to it.
+  let heatMax=0;
+  for(const rv of rowVals){
+    const m=rows.get(rv), members=rowMembers.get(rv);
+    for(const c of colVals){
+      const v=m.get(c)||0;
+      const den=isCand?offeredIdx(members,col.kind,c).length:rowPop.get(rv);
+      const disp=mode==="pct"?(den?100*v/den:0):v;
+      if(disp>heatMax) heatMax=disp;
+    }
+  }
+  const heatBg=disp=>disp>0&&heatMax>0?` style="background:rgba(38,82,137,${(0.04+0.30*disp/heatMax).toFixed(3)})"`:"";
   let html="<table><tr><th>"+dim.label+" \\ "+col.label+"</th>"+
     colVals.map(c=>"<th>"+c+(isCand?"<br><span class='note'>"+fmt(offTotal(c))+" offered</span>":"")+"</th>").join("")+"<th>Total</th></tr>";
   const datasets=colVals.map((c,ci)=>({label:c, data:[], backgroundColor:PALETTE[ci%PALETTE.length]}));
@@ -345,8 +361,9 @@ function renderCrosstab(idx){
     colVals.forEach((c,ci)=>{
       const v=m.get(c)||0;
       const den=isCand?offeredIdx(members,col.kind,c).length:tot;
+      const disp=mode==="pct"?(den?100*v/den:0):v;
       datasets[ci].data.push({x:den?+(100*v/den).toFixed(1):0, n:v});
-      html+="<td>"+(mode==="pct"? pct(v,den)+" <span class='note'>("+fmt(v)+")</span>" : fmt(v))+"</td>";
+      html+="<td"+heatBg(disp)+">"+(mode==="pct"? pct(v,den)+" <span class='note'>("+fmt(v)+")</span>" : fmt(v))+"</td>";
     });
     html+="<td><b>"+fmt(tot)+"</b></td></tr>";
   }
@@ -358,6 +375,7 @@ function renderCrosstab(idx){
   $("ctTable").innerHTML=html;
   let note=excluded? fmt(excluded)+" respondent(s) in view have no value for “"+col.label+"” (question not asked in their poll, or not answered) and are excluded from this table.":"";
   if(isCand) note+=(note?" ":"")+"Each column's % is of respondents in polls where that candidate was on the ballot (n offered in the header)."+(col.top3?" A respondent can appear in up to 3 columns.":"");
+  note+=(note?" ":"")+"Cells are shaded light-to-dark blue by the value shown.";
   $("ctNote").textContent=note;
   if(isCand){
     $("ctChartTitle").textContent="Overall share among those offered the candidate";
@@ -509,18 +527,20 @@ function fillSelect(el, values, labelFn){
 async function init(){
   try{
     const [r,g,d,m]=await Promise.all([
-      fetch("data/respondents.json").then(x=>x.json()),
-      fetch("data/gop_rankings.json").then(x=>x.json()),
-      fetch("data/dem_rankings.json").then(x=>x.json()),
-      fetch("data/meta.json").then(x=>x.json())]);
+      fetch("data/respondents.json?v="+DATA_V).then(x=>x.json()),
+      fetch("data/gop_rankings.json?v="+DATA_V).then(x=>x.json()),
+      fetch("data/dem_rankings.json?v="+DATA_V).then(x=>x.json()),
+      fetch("data/meta.json?v="+DATA_V).then(x=>x.json())]);
     R=r; G=g; D=d; META=m;
   }catch(e){
     $("loading").innerHTML='<p class="err">Could not load the poll data files.</p><p>If you opened this file directly from disk, serve it over HTTP instead (GitHub Pages works) — browsers block data fetches from file:// pages.</p>';
     return;
   }
   DIMS.tribe.order=META.tribes||[];
-  $("headN").textContent="· "+fmt(R.length)+" respondents · "+META.polls.Feb2026.min_date+" – "+META.polls.Feb2026.max_date+" + Aug 2026";
   const dates=R.map(x=>x.submission_date).filter(Boolean).sort();
+  $("subDates").textContent=dates.length?("from "+fmtDate(dates[0])+" to "+fmtDate(dates[dates.length-1])):"";
+  $("headN").textContent="· "+fmt(R.length)+" respondents";
+  $("buildDate").textContent=META.generated?fmtDate(META.generated):"Nov 20, 2026";
   $("fFrom").min=dates[0]; $("fFrom").max=dates[dates.length-1];
   $("fTo").min=dates[0]; $("fTo").max=dates[dates.length-1];
   fillSelect($("fPoll"), Object.keys(META.polls), k=>POLL_LABEL[k]+" ("+fmt(META.polls[k].n)+")");
