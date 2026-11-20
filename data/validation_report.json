@@ -1,0 +1,399 @@
+{
+ "per_poll": {
+  "Feb2026": {
+   "n": 1092,
+   "primary_agree": 1053,
+   "primary_changed": 39,
+   "mean_abs_diff": 2.6874,
+   "max_abs_diff": 12.5
+  },
+  "Apr2026": {
+   "n": 327,
+   "primary_agree": 313,
+   "primary_changed": 14,
+   "mean_abs_diff": 3.6056,
+   "max_abs_diff": 11.75
+  },
+  "Aug2026": {
+   "n": 19,
+   "primary_agree": 19,
+   "primary_changed": 0,
+   "mean_abs_diff": 0.0,
+   "max_abs_diff": 0.0
+  }
+ },
+ "movers": [
+  {
+   "synthetic_id": "Feb2026-000006",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000197",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000211",
+   "poll": "Feb2026",
+   "old_primary": "National Security Hawk",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.22
+  },
+  {
+   "synthetic_id": "Feb2026-000237",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-000274",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000295",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000311",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000332",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000364",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000413",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "America First Populist",
+   "max_diff": 5.37
+  },
+  {
+   "synthetic_id": "Feb2026-000415",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-000428",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-000431",
+   "poll": "Feb2026",
+   "old_primary": "Order & Opportunity Center-Left",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.88
+  },
+  {
+   "synthetic_id": "Feb2026-000445",
+   "poll": "Feb2026",
+   "old_primary": "Pragmatic / Results-Oriented",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 3.21
+  },
+  {
+   "synthetic_id": "Feb2026-000496",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000574",
+   "poll": "Feb2026",
+   "old_primary": "National Security Hawk",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.25
+  },
+  {
+   "synthetic_id": "Feb2026-000583",
+   "poll": "Feb2026",
+   "old_primary": "Order & Opportunity Center-Left",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.58
+  },
+  {
+   "synthetic_id": "Feb2026-000610",
+   "poll": "Feb2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.65
+  },
+  {
+   "synthetic_id": "Feb2026-000669",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000676",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-000680",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Order & Opportunity Center-Left",
+   "max_diff": 3.32
+  },
+  {
+   "synthetic_id": "Feb2026-000749",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000751",
+   "poll": "Feb2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Pragmatic / Results-Oriented",
+   "max_diff": 7.43
+  },
+  {
+   "synthetic_id": "Feb2026-000754",
+   "poll": "Feb2026",
+   "old_primary": "National Security Hawk",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.22
+  },
+  {
+   "synthetic_id": "Feb2026-000775",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000793",
+   "poll": "Feb2026",
+   "old_primary": "National Security Hawk",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.52
+  },
+  {
+   "synthetic_id": "Feb2026-000810",
+   "poll": "Feb2026",
+   "old_primary": "Pragmatic / Results-Oriented",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 3.8
+  },
+  {
+   "synthetic_id": "Feb2026-000813",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-000857",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000865",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000888",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000932",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000936",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.28
+  },
+  {
+   "synthetic_id": "Feb2026-000976",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "America First Populist",
+   "max_diff": 5.37
+  },
+  {
+   "synthetic_id": "Feb2026-000981",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.74
+  },
+  {
+   "synthetic_id": "Feb2026-000998",
+   "poll": "Feb2026",
+   "old_primary": "National Security Hawk",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.22
+  },
+  {
+   "synthetic_id": "Feb2026-001010",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-001050",
+   "poll": "Feb2026",
+   "old_primary": "America First Populist",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 4.24
+  },
+  {
+   "synthetic_id": "Feb2026-001084",
+   "poll": "Feb2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 6.71
+  },
+  {
+   "synthetic_id": "Apr2026-000007",
+   "poll": "Apr2026",
+   "old_primary": "Traditional / Pro-Business Conservative",
+   "new_primary": "Libertarian-Leaning",
+   "max_diff": 8.48
+  },
+  {
+   "synthetic_id": "Apr2026-000016",
+   "poll": "Apr2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.29
+  },
+  {
+   "synthetic_id": "Apr2026-000104",
+   "poll": "Apr2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.97
+  },
+  {
+   "synthetic_id": "Apr2026-000109",
+   "poll": "Apr2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 7.39
+  },
+  {
+   "synthetic_id": "Apr2026-000182",
+   "poll": "Apr2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.92
+  },
+  {
+   "synthetic_id": "Apr2026-000188",
+   "poll": "Apr2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 7.37
+  },
+  {
+   "synthetic_id": "Apr2026-000221",
+   "poll": "Apr2026",
+   "old_primary": "Traditional / Pro-Business Conservative",
+   "new_primary": "Libertarian-Leaning",
+   "max_diff": 8.48
+  },
+  {
+   "synthetic_id": "Apr2026-000224",
+   "poll": "Apr2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.92
+  },
+  {
+   "synthetic_id": "Apr2026-000248",
+   "poll": "Apr2026",
+   "old_primary": "Traditional / Pro-Business Conservative",
+   "new_primary": "Libertarian-Leaning",
+   "max_diff": 8.45
+  },
+  {
+   "synthetic_id": "Apr2026-000257",
+   "poll": "Apr2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 7.35
+  },
+  {
+   "synthetic_id": "Apr2026-000285",
+   "poll": "Apr2026",
+   "old_primary": "Traditional / Pro-Business Conservative",
+   "new_primary": "Libertarian-Leaning",
+   "max_diff": 8.48
+  },
+  {
+   "synthetic_id": "Apr2026-000297",
+   "poll": "Apr2026",
+   "old_primary": "Traditional / Pro-Business Conservative",
+   "new_primary": "Libertarian-Leaning",
+   "max_diff": 8.45
+  },
+  {
+   "synthetic_id": "Apr2026-000307",
+   "poll": "Apr2026",
+   "old_primary": "Faith & Flag Social Conservative",
+   "new_primary": "Order & Opportunity Center-Left",
+   "max_diff": 7.05
+  },
+  {
+   "synthetic_id": "Apr2026-000327",
+   "poll": "Apr2026",
+   "old_primary": "Libertarian-Leaning",
+   "new_primary": "Traditional / Pro-Business Conservative",
+   "max_diff": 5.39
+  }
+ ],
+ "note": "Aug2026 reproduces the live script exactly (180/180 scores identical). Feb/Apr differ by design: uniform live model vs the old historical contrast approximation."
+}

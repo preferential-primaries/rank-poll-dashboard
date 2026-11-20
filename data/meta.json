@@ -1,0 +1,63 @@
+{
+ "generated": "2026-11-20",
+ "n_respondents": 1439,
+ "polls": {
+  "Feb2026": {
+   "n": 1093,
+   "min_date": "2026-01-26",
+   "max_date": "2026-09-25"
+  },
+  "Apr2026": {
+   "n": 327,
+   "min_date": "2026-03-26",
+   "max_date": "2026-05-26"
+  },
+  "Aug2026": {
+   "n": 19,
+   "min_date": "2026-07-22",
+   "max_date": "2026-08-06"
+  }
+ },
+ "gop_candidates": [
+  "Ted Cruz",
+  "JD Vance",
+  "Marco Rubio",
+  "Ron DeSantis",
+  "Donald Trump Jr.",
+  "Glenn Youngkin",
+  "Nikki Haley",
+  "Steve Bannon",
+  "Tulsi Gabbard",
+  "Brian Kemp",
+  "Vivek Ramaswamy",
+  "Other",
+  "Josh Hawley",
+  "Tucker Carlson"
+ ],
+ "dem_candidates": [
+  "Kamala Harris",
+  "Josh Shapiro",
+  "Andy Beshear",
+  "J.B. Pritzker",
+  "Alexandria Ocasio-Cortez",
+  "Jon Ossoff",
+  "Gavin Newsom",
+  "Pete Buttigieg",
+  "Other"
+ ],
+ "tribes": [
+  "Faith & Flag Social Conservative",
+  "Traditional / Pro-Business Conservative",
+  "America First Populist",
+  "National Security Hawk",
+  "Pragmatic / Results-Oriented",
+  "Libertarian-Leaning",
+  "Order & Opportunity Center-Left",
+  "Mainstream Liberal",
+  "Economic Populist Left",
+  "Progressive / Social Democratic Left",
+  "Not sure / Low-signal",
+  "Unclassified / Insufficient data"
+ ],
+ "model": "Tribe scores: 90% policy priorities + 9% ideology + 1% election signal (Aug only), renormalized over components present. Feb/Apr priorities were unranked sets (equal weights); Aug priorities were ranked. Feb ideology 1-5 rescaled to 1-7 (1->1, 2->2, 3->4, 4->6, 5->7). Candidate rankings are never used for tribe classification."
+}
