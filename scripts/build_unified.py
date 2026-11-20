@@ -25,8 +25,10 @@ scores will shift somewhat vs that table; see validation report):
 Outputs (~/workspace/rcv-polling/unified/):
   unified_respondents.json / .csv - one row per respondent (1,439)
   unified_gop_rankings.csv        - long GOP rankings (all candidates kept;
-                                    in_current_field flags the 5 obsolete Feb names)
-  unified_dem_rankings.csv        - long DEM rankings (Aug only)
+                                    in_current_field flags the 5 obsolete Feb names;
+                                    top3 = 1 when the candidate was ranked 1-3)
+  unified_dem_rankings.csv        - long DEM rankings (Aug only; also has top3)
+  candidate_availability.json     - which candidates each poll offered
   unified_election_items.csv      - Aug ranked concerns + TX selected statements
   validation_report.json          - comparison vs the old Respondents table
 """
@@ -86,6 +88,9 @@ IDEOLOGY_CENTERS = [6.5, 5.8, 6.1, 5.7, 4.2, 5.1, 3.8, 2.7, 3.2, 1.6]
 RANK_WEIGHTS = [1.00, 0.80, 0.65, 0.52, 0.42]
 ELECTION_WEIGHTS = [0.50, 0.30, 0.20]
 FEB_RESCALE = {"1": 1, "2": 2, "3": 4, "4": 6, "5": 7}
+IDEOLOGY_LABELS = {1: "Very Liberal", 2: "Liberal", 3: "Somewhat Liberal",
+                   4: "Moderate", 5: "Somewhat Conservative", 6: "Conservative",
+                   7: "Very Conservative"}
 CURRENT_GOP_FIELD = {"Marco Rubio", "Glenn Youngkin", "JD Vance", "Ted Cruz",
                      "Ron DeSantis", "Josh Hawley", "Donald Trump Jr.",
                      "Tucker Carlson", "Other"}
@@ -212,6 +217,7 @@ def code_respondent(poll, row):
         except ValueError:
             ideo7 = None
     ideo_norm = round2((ideo7 - 1) / 6) if ideo7 is not None else None
+    ideo_label = IDEOLOGY_LABELS.get(ideo7, "") if ideo7 is not None else ""
 
     # Policy picks
     pol_col = [c for c in row.keys() if "priorities as a" in c or "policy priorities as a voter" in c]
@@ -266,26 +272,31 @@ def code_respondent(poll, row):
     gop_ranked = [(r, c) for r, c in parse_ranked(row.get(gop_col, "")) if c.strip().lower() != "nan"]
     gop_ranked = [(i + 1, c) for i, (_, c) in enumerate(gop_ranked)]
     gop_rows = [{"submission_id": sub_id, "poll_source": poll, "candidate": cand,
-                 "rank": rank, "in_current_field": 1 if cand in CURRENT_GOP_FIELD else 0}
+                 "rank": rank, "in_current_field": 1 if cand in CURRENT_GOP_FIELD else 0,
+                 "top3": 1 if rank <= 3 else 0}
                 for rank, cand in gop_ranked]
     gop_first = gop_ranked[0][1] if gop_ranked else ""
+    gop_top3 = [cand for _, cand in gop_ranked[:3]]
 
     # DEM rankings (Aug only)
     dem_rows = []
     dem_first = ""
+    dem_top3 = []
     if poll == "Aug2026":
         dcol = [c for c in row.keys() if "GREATEST chance" in c][0]
         dem_ranked = [(r, c) for r, c in parse_ranked(row.get(dcol, "")) if c.strip().lower() != "nan"]
         dem_ranked = [(i + 1, c) for i, (_, c) in enumerate(dem_ranked)]
-        dem_rows = [{"submission_id": sub_id, "poll_source": poll, "candidate": cand, "rank": rank}
+        dem_rows = [{"submission_id": sub_id, "poll_source": poll, "candidate": cand, "rank": rank,
+                     "top3": 1 if rank <= 3 else 0}
                     for rank, cand in dem_ranked]
         dem_first = dem_ranked[0][1] if dem_ranked else ""
+        dem_top3 = [cand for _, cand in dem_ranked[:3]]
 
     rec = {
         "submission_id": sub_id, "poll_source": poll, "submission_date": date,
         "state": state, "gender": gender, "age": age,
         "ideology_1_7": ideo7, "ideology_norm": ideo_norm,
-        "ideology_raw": ideo_raw,
+        "ideology_raw": ideo_raw, "ideology_label": ideo_label,
         "policy_picks": [k for _, k in picks],
         "n_policy_picks": len(picks),
         "picked_not_sure": 1 if picked_not_sure else 0,
@@ -293,7 +304,8 @@ def code_respondent(poll, row):
         "primary_tribe": primary, "runner_up_tribe": runner or "",
         "tribe_margin": margin,
         "gop_first_choice": gop_first, "gop_n_ranked": len(gop_ranked),
-        "dem_first_choice": dem_first,
+        "gop_top3": gop_top3,
+        "dem_first_choice": dem_first, "dem_top3": dem_top3,
         "election_top_concern": election_top3[0] if election_top3 else "",
     }
     # Poll-specific fields
@@ -344,12 +356,13 @@ def main():
 
     # CSV: flatten tribe scores into 10 columns
     fields = ["submission_id", "poll_source", "submission_date", "state", "gender", "age",
-              "ideology_1_7", "ideology_norm", "ideology_raw", "policy_picks", "n_policy_picks",
+              "ideology_1_7", "ideology_norm", "ideology_raw", "ideology_label", "policy_picks", "n_policy_picks",
               "picked_not_sure"] + [f"affinity_{t}" for t in
               ["faith_flag", "traditional", "america_first", "hawk", "pragmatic", "libertarian",
                "order_opportunity", "mainstream_liberal", "econ_populist_left", "progressive_left"]] + \
              ["primary_tribe", "runner_up_tribe", "tribe_margin", "gop_first_choice", "gop_n_ranked",
-              "dem_first_choice", "election_top_concern", "tariff_support", "eminent_domain_ban",
+              "gop_top3", "dem_first_choice", "dem_top3", "election_top_concern",
+              "tariff_support", "eminent_domain_ban",
               "senate_choice", "iran_force", "tariff_top", "party"]
     with open(os.path.join(OUT, "unified_respondents.csv"), "w", newline="", encoding="utf-8") as f:
         w = csv.DictWriter(f, fieldnames=fields, extrasaction="ignore")
@@ -357,19 +370,33 @@ def main():
         for r in respondents:
             flat = dict(r)
             flat["policy_picks"] = "|".join(r["policy_picks"])
+            flat["gop_top3"] = "|".join(r["gop_top3"])
+            flat["dem_top3"] = "|".join(r["dem_top3"])
             for i, t in enumerate(["faith_flag", "traditional", "america_first", "hawk", "pragmatic",
                                    "libertarian", "order_opportunity", "mainstream_liberal",
                                    "econ_populist_left", "progressive_left"]):
                 flat[f"affinity_{t}"] = r["tribe_scores"][i] if r["tribe_scores"] else ""
             del flat["tribe_scores"]
             w.writerow(flat)
-    for name, rows, fn in [("unified_gop_rankings.csv", gop_rows, ["submission_id", "poll_source", "candidate", "rank", "in_current_field"]),
-                           ("unified_dem_rankings.csv", dem_rows, ["submission_id", "poll_source", "candidate", "rank"]),
+    for name, rows, fn in [("unified_gop_rankings.csv", gop_rows, ["submission_id", "poll_source", "candidate", "rank", "in_current_field", "top3"]),
+                           ("unified_dem_rankings.csv", dem_rows, ["submission_id", "poll_source", "candidate", "rank", "top3"]),
                            ("unified_election_items.csv", elec_rows, ["submission_id", "poll_source", "item", "rank", "selected", "question"])]:
         with open(os.path.join(OUT, name), "w", newline="", encoding="utf-8") as f:
             w = csv.DictWriter(f, fieldnames=fn, extrasaction="ignore")
             w.writeheader()
             w.writerows(rows)
+    # Candidate availability: which candidates each poll offered (drives the
+    # dashboard's dynamic denominators — a candidate's % is measured only
+    # over respondents in polls where that candidate was on the ballot).
+    availability = {"gop": {}, "dem": {}}
+    for rows, kind in [(gop_rows, "gop"), (dem_rows, "dem")]:
+        by_poll = collections.defaultdict(list)
+        for row in rows:
+            if row["candidate"] not in by_poll[row["poll_source"]]:
+                by_poll[row["poll_source"]].append(row["candidate"])
+        availability[kind] = dict(sorted(by_poll.items()))
+    json.dump(availability, open(os.path.join(OUT, "candidate_availability.json"), "w"), indent=1)
+    print("candidate availability:", {k: {p: len(v) for p, v in d.items()} for k, d in availability.items()})
     print("wrote unified files to", OUT)
     if ELECTION_AFFINITY is None:
         print("NOTE: ELECTION_AFFINITY not set — Aug scores omit the 1% election component (provisional, within ~1pt).")

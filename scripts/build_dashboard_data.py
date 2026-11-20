@@ -13,6 +13,7 @@ import csv
 import json
 import os
 import collections
+from datetime import date
 
 REPO = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 SRC = os.path.join(REPO, "data")  # unified_*.csv/json live here
@@ -34,7 +35,7 @@ with open(os.path.join(SRC, "unified_gop_rankings.csv"), encoding="utf-8") as f:
             gop_candidates.append(c)
         i = idx.get(row["submission_id"])
         if i is not None:
-            gop[i].append([gop_idx[c], int(row["rank"]), int(row["in_current_field"])])
+            gop[i].append([gop_idx[c], int(row["rank"]), int(row["in_current_field"]), int(row["top3"])])
 for lst in gop:
     lst.sort(key=lambda x: x[1])
 
@@ -49,7 +50,7 @@ with open(os.path.join(SRC, "unified_dem_rankings.csv"), encoding="utf-8") as f:
             dem_candidates.append(c)
         i = idx.get(row["submission_id"])
         if i is not None:
-            dem[i].append([dem_idx[c], int(row["rank"])])
+            dem[i].append([dem_idx[c], int(row["rank"]), int(row["top3"])])
 for lst in dem:
     lst.sort(key=lambda x: x[1])
 
@@ -66,12 +67,15 @@ for r in respondents:
     p["n"] += 1
     p["min_date"] = min(p["min_date"], r["submission_date"])
     p["max_date"] = max(p["max_date"], r["submission_date"])
+availability = json.load(open(os.path.join(SRC, "candidate_availability.json")))
 meta = {
-    "generated": "2026-11-20",
+    "generated": date.today().isoformat(),
     "n_respondents": len(respondents),
     "polls": polls,
     "gop_candidates": gop_candidates,
     "dem_candidates": dem_candidates,
+    "gop_offered": availability["gop"],
+    "dem_offered": availability["dem"],
     "tribes": ["Faith & Flag Social Conservative", "Traditional / Pro-Business Conservative",
                "America First Populist", "National Security Hawk",
                "Pragmatic / Results-Oriented", "Libertarian-Leaning",
