@@ -50,6 +50,9 @@
   .note { font-size:13px; color:var(--mut); }
   .winner { background:#eef6ee; border:1px solid #b9d9b9; border-radius:8px; padding:12px 16px; margin:10px 0; }
   .winner b { color:#1d5c1d; }
+  .seg { display:inline-flex; border:1px solid var(--navy2); border-radius:5px; overflow:hidden; margin-bottom:10px; }
+  .seg button { border:none; border-radius:0; padding:6px 14px; }
+  .seg button.on { background:var(--navy); color:#fff; }
   .row { display:flex; gap:14px; flex-wrap:wrap; align-items:flex-end; margin-bottom:10px; }
   .row label { font-size:12px; color:var(--mut); display:block; margin-bottom:3px; }
   .row select { font-size:14px; padding:6px 8px; border:1px solid #bbb; border-radius:5px; }
@@ -95,7 +98,10 @@
     <div class="panel active" id="panel-overview">
       <div class="cards" id="statCards"></div>
       <div class="grid2">
-        <div><h2>GOP first choice</h2><div class="chartbox"><canvas id="chFirst"></canvas></div></div>
+        <div><h2 id="gopChartTitle">GOP first choice</h2>
+          <div class="seg" id="ovSeg"><button data-m="first" class="on">First choice</button><button data-m="top3">Top 3</button></div>
+          <div class="chartbox"><canvas id="chFirst"></canvas></div>
+          <p class="note" id="gopChartNote"></p></div>
         <div><h2>Tribe distribution</h2><div class="chartbox"><canvas id="chTribe"></canvas></div></div>
       </div>
       <div class="grid2">
@@ -116,7 +122,7 @@
       </div>
       <div id="ctTable"></div>
       <p class="note" id="ctNote"></p>
-      <h3>Chart (row %)</h3>
+      <h3 id="ctChartTitle">Chart (row %)</h3>
       <div class="chartbox tall"><canvas id="chCt"></canvas></div>
     </div>
 
@@ -163,6 +169,30 @@ const PALETTE=["#022553","#265289","#9A1220","#c25e3a","#2a7f62","#7a5aa6","#b08
 const $=id=>document.getElementById(id);
 const fmt=n=>n.toLocaleString("en-US");
 const pct=(a,b)=>b? (100*a/b).toFixed(1)+"%":"—";
+const IDEO_LABEL={1:"Very Liberal",2:"Liberal",3:"Somewhat Liberal",4:"Moderate",5:"Somewhat Conservative",6:"Conservative",7:"Very Conservative"};
+let ovMode="first";
+// Respondents in idx whose poll offered this candidate — the dynamic
+// denominator for every candidate %. Falls back to all of idx if the
+// availability map is missing (old data).
+function offeredIdx(idx, kind, name){
+  const m = kind==="gop" ? (META.gop_offered||{}) : (META.dem_offered||{});
+  const hasMap = Object.keys(m).length>0;
+  return idx.filter(i=>{
+    if(!hasMap) return true; // old data without the map: fall back to all
+    const list=m[R[i].poll_source];
+    return !!list && list.includes(name); // a poll absent from the map did not offer it
+  });
+}
+function top3Names(i, kind){
+  const Rk = kind==="gop" ? G.rankings[i]||[] : D.rankings[i]||[];
+  const C = kind==="gop" ? G.candidates : D.candidates;
+  const ti = kind==="gop" ? 3 : 2;
+  return Rk.filter(e=>e[ti]===1).map(e=>C[e[0]]);
+}
+function ballotPolls(kind, name){
+  const m = kind==="gop" ? (META.gop_offered||{}) : (META.dem_offered||{});
+  return Object.keys(m).filter(p=>m[p].includes(name)).map(p=>POLL_LABEL[p]||p);
+}
 
 function destroyChart(id){ if(charts[id]){ charts[id].destroy(); delete charts[id]; } }
 function barChart(id, labels, data, opts={}){
@@ -172,7 +202,7 @@ function barChart(id, labels, data, opts={}){
     data:{labels, datasets:[{data, backgroundColor:opts.color||colors, borderWidth:0}]},
     options:{indexAxis:opts.horizontal?"y":"x", responsive:true, maintainAspectRatio:false,
       plugins:{legend:{display:false},
-        tooltip:{callbacks:{label:c=>" "+fmt(c.parsed.x??c.parsed.y)}}},
+        tooltip:{callbacks:{label:c=>opts.tip?opts.tip(c):" "+fmt(c.parsed.x??c.parsed.y)}}},
       scales:{x:{ticks:{precision:0}}, y:{ticks:{precision:0, autoSkip:false}}}}});
 }
 function stackedChart(id, labels, datasets){
@@ -215,18 +245,32 @@ function renderOverview(idx){
   const dates=idx.map(i=>R[i].submission_date).filter(Boolean).sort();
   const fc=countsOf(idx,r=>r.gop_first_choice);
   const top=fc[0];
+  const topOff=top?offeredIdx(idx,"gop",top[0]).length:0;
   $("statCards").innerHTML=
     `<div class="card"><div class="v">${fmt(n)}</div><div class="l">Respondents</div></div>`+
     `<div class="card"><div class="v">${polls.length}</div><div class="l">Poll${polls.length===1?"":"s"} in view</div></div>`+
     `<div class="card"><div class="v">${dates.length?dates[0].slice(5):"—"}</div><div class="l">Earliest response</div></div>`+
     `<div class="card"><div class="v">${dates.length?dates[dates.length-1].slice(5):"—"}</div><div class="l">Latest response</div></div>`+
-    `<div class="card"><div class="v">${top?top[0]:"—"}</div><div class="l">Top first choice${top?` · ${pct(top[1],n)}`:""}</div></div>`;
-  barChart("chFirst", fc.map(x=>x[0]), fc.map(x=>x[1]), {horizontal:true});
+    `<div class="card"><div class="v">${top?top[0]:"—"}</div><div class="l">Top first choice${top?` · ${pct(top[1],topOff)} of ${fmt(topOff)} offered`:""}</div></div>`;
+  const gopStats=G.candidates.map(name=>{
+    const off=offeredIdx(idx,"gop",name);
+    let count=0;
+    for(const i of off){
+      if(ovMode==="first"){ if(R[i].gop_first_choice===name) count++; }
+      else if(top3Names(i,"gop").includes(name)) count++;
+    }
+    return {name, count, offered:off.length};
+  }).filter(x=>x.offered>0).sort((a,b)=>b.count-a.count);
+  $("gopChartTitle").textContent=ovMode==="first"?"GOP first choice":"GOP top 3 (ranked 1st–3rd)";
+  $("gopChartNote").textContent="Each bar's % is of respondents in polls where that candidate was on the ballot — February-only names are measured against February respondents, not all polls.";
+  barChart("chFirst", gopStats.map(x=>x.name), gopStats.map(x=>x.count), {horizontal:true,
+    tip:c=>{ const s=gopStats[c.dataIndex]; return " "+fmt(s.count)+" ("+pct(s.count,s.offered)+" of "+fmt(s.offered)+" offered)"; }});
   const tr=countsOf(idx,r=>r.primary_tribe);
   barChart("chTribe", tr.map(x=>x[0]), tr.map(x=>x[1]), {horizontal:true});
   const ideo=[1,2,3,4,5,6,7].map(v=>idx.filter(i=>R[i].ideology_1_7===v).length);
   const ideoBlank=idx.filter(i=>R[i].ideology_1_7==null).length;
-  barChart("chIdeo", ["1","2","3","4","5","6","7","No answer"], [...ideo, ideoBlank], {color:NAVY2});
+  barChart("chIdeo", ["1","2","3","4","5","6","7","No answer"], [...ideo, ideoBlank], {color:NAVY2,
+    tip:c=>{ const i=c.dataIndex; const lab=i<7?(i+1)+" – "+IDEO_LABEL[i+1]:"No answer"; return " "+lab+": "+fmt(c.parsed.y); }});
   const pc=countsOf(idx,r=>POLL_LABEL[r.poll_source]||r.poll_source);
   barChart("chPoll", pc.map(x=>x[0]), pc.map(x=>x[1]), {color:CRIMSON});
 }
@@ -240,8 +284,10 @@ const DIMS={
   poll:{label:"Poll", get:r=>POLL_LABEL[r.poll_source]||r.poll_source, order:["Feb 2026","Apr 2026 (TX)","Aug 2026"]},
 };
 const COLS={
-  gop:{label:"GOP first choice", get:r=>r.gop_first_choice},
-  dem:{label:"Dem first choice (Aug only)", get:r=>r.dem_first_choice},
+  gop:{label:"GOP first choice", get:r=>r.gop_first_choice, kind:"gop"},
+  gopTop3:{label:"GOP top 3 (ranked 1st–3rd)", kind:"gop", top3:true},
+  dem:{label:"Dem first choice (Aug only)", get:r=>r.dem_first_choice, kind:"dem"},
+  demTop3:{label:"Dem top 3 (Aug only)", kind:"dem", top3:true},
   tariffFeb:{label:"Tariff support — Yes/No (Feb only)", get:r=>r.tariff_support},
   tariffTx:{label:"Tariff top statement (TX only)", get:r=>r.tariff_top},
   senate:{label:"Senate choice (TX only)", get:r=>r.senate_choice},
@@ -252,15 +298,28 @@ const COLS={
 function renderCrosstab(idx){
   const rk=$("ctRow").value, ck=$("ctCol").value, mode=$("ctMode").value;
   const dim=DIMS[rk], col=COLS[ck];
-  const rows=new Map(), cols=new Map();
+  const isCand=!!col.kind;
+  const rows=new Map(), cols=new Map(), rowPop=new Map(), rowMembers=new Map();
   let excluded=0;
   for(const i of idx){
-    const r=R[i], cv=col.get(r);
-    if(cv==null||cv===""){ excluded++; continue; }
-    const rv=dim.get(r);
-    if(!rows.has(rv)) rows.set(rv,new Map());
-    rows.get(rv).set(cv,(rows.get(rv).get(cv)||0)+1);
-    cols.set(cv,(cols.get(cv)||0)+1);
+    const r=R[i], rv=dim.get(r);
+    if(!rowMembers.has(rv)) rowMembers.set(rv,[]);
+    rowMembers.get(rv).push(i);
+    let vals;
+    if(col.top3){
+      vals=top3Names(i,col.kind);
+      if(!vals.length){ excluded++; continue; }
+    }else{
+      const cv=col.get(r);
+      if(cv==null||cv===""){ excluded++; continue; }
+      vals=[cv];
+    }
+    if(!rows.has(rv)){ rows.set(rv,new Map()); rowPop.set(rv,0); }
+    rowPop.set(rv,rowPop.get(rv)+1);
+    for(const cv of vals){
+      rows.get(rv).set(cv,(rows.get(rv).get(cv)||0)+1);
+      cols.set(cv,(cols.get(cv)||0)+1);
+    }
   }
   const colVals=[...cols.entries()].sort((a,b)=>b[1]-a[1]).map(x=>x[0]);
   let rowVals=[...rows.keys()];
@@ -269,30 +328,46 @@ function renderCrosstab(idx){
     const ia=ord.indexOf(a), ib=ord.indexOf(b);
     if(ia>=0&&ib>=0) return ia-ib;
     if(ia>=0) return -1; if(ib>=0) return 1;
-    const ta=[...rows.get(a).values()].reduce((s,v)=>s+v,0), tb=[...rows.get(b).values()].reduce((s,v)=>s+v,0);
-    return tb-ta;
+    return (rowPop.get(b)||0)-(rowPop.get(a)||0);
   });
   if(!rowVals.length||!colVals.length){
     $("ctTable").innerHTML="<p>No data for this combination in the current view.</p>";
     destroyChart("chCt"); $("ctNote").textContent=""; return;
   }
-  let html="<table><tr><th>"+dim.label+" \\ "+col.label+"</th>"+colVals.map(c=>"<th>"+c+"</th>").join("")+"<th>Total</th></tr>";
+  const offTotal=c=>isCand?offeredIdx(idx,col.kind,c).length:0;
+  let html="<table><tr><th>"+dim.label+" \\ "+col.label+"</th>"+
+    colVals.map(c=>"<th>"+c+(isCand?"<br><span class='note'>"+fmt(offTotal(c))+" offered</span>":"")+"</th>").join("")+"<th>Total</th></tr>";
   const datasets=colVals.map((c,ci)=>({label:c, data:[], backgroundColor:PALETTE[ci%PALETTE.length]}));
   for(const rv of rowVals){
-    const m=rows.get(rv), tot=[...m.values()].reduce((s,v)=>s+v,0);
+    const m=rows.get(rv), tot=rowPop.get(rv);
+    const members=rowMembers.get(rv);
     html+="<tr><td>"+rv+"</td>";
     colVals.forEach((c,ci)=>{
       const v=m.get(c)||0;
-      datasets[ci].data.push({x:+(100*v/tot).toFixed(1), n:v});
-      html+="<td>"+(mode==="pct"? pct(v,tot)+" <span class='note'>("+fmt(v)+")</span>" : fmt(v))+"</td>";
+      const den=isCand?offeredIdx(members,col.kind,c).length:tot;
+      datasets[ci].data.push({x:den?+(100*v/den).toFixed(1):0, n:v});
+      html+="<td>"+(mode==="pct"? pct(v,den)+" <span class='note'>("+fmt(v)+")</span>" : fmt(v))+"</td>";
     });
     html+="<td><b>"+fmt(tot)+"</b></td></tr>";
   }
-  const grand=[...cols.values()].reduce((s,v)=>s+v,0);
-  html+="<tr class='total'><td>Total</td>"+colVals.map(c=>"<td>"+fmt(cols.get(c))+"</td>").join("")+"<td>"+fmt(grand)+"</td></tr></table>";
+  const grand=[...rowPop.values()].reduce((s,v)=>s+v,0);
+  html+="<tr class='total'><td>Total</td>"+colVals.map(c=>{
+    const tot=cols.get(c);
+    return "<td>"+(isCand?fmt(tot)+" <span class='note'>("+pct(tot,offTotal(c))+")</span>":fmt(tot))+"</td>";
+  }).join("")+"<td>"+fmt(grand)+"</td></tr></table>";
   $("ctTable").innerHTML=html;
-  $("ctNote").textContent=excluded? fmt(excluded)+" respondent(s) in view have no value for “"+col.label+"” (question not asked in their poll, or not answered) and are excluded from this table.":"";
-  stackedChart("chCt", rowVals, datasets);
+  let note=excluded? fmt(excluded)+" respondent(s) in view have no value for “"+col.label+"” (question not asked in their poll, or not answered) and are excluded from this table.":"";
+  if(isCand) note+=(note?" ":"")+"Each column's % is of respondents in polls where that candidate was on the ballot (n offered in the header)."+(col.top3?" A respondent can appear in up to 3 columns.":"");
+  $("ctNote").textContent=note;
+  if(isCand){
+    $("ctChartTitle").textContent="Overall share among those offered the candidate";
+    const totals=colVals.map(c=>({c, v:cols.get(c), off:offTotal(c)}));
+    barChart("chCt", totals.map(x=>x.c), totals.map(x=>x.off?+(100*x.v/x.off).toFixed(1):0), {horizontal:true,
+      tip:c=>{ const t=totals[c.dataIndex]; return " "+fmt(t.v)+" ("+pct(t.v,t.off)+" of "+fmt(t.off)+" offered)"; }});
+  }else{
+    $("ctChartTitle").textContent="Chart (row %)";
+    stackedChart("chCt", rowVals, datasets);
+  }
 }
 
 function runIRV(idx, fieldOnly){
@@ -357,7 +432,8 @@ function renderIRV(idx){
 function renderCandidate(idx){
   const ci=+($("cdSel").value||0);
   const name=G.candidates[ci];
-  let ranked=0, first=0, rankSum=0;
+  const offered=offeredIdx(idx,"gop",name).length;
+  let ranked=0, first=0, top3=0, rankSum=0;
   const dist=new Map();
   for(const i of idx){
     const e=(G.rankings[i]||[]).find(x=>x[0]===ci);
@@ -365,23 +441,28 @@ function renderCandidate(idx){
     ranked++; rankSum+=e[1];
     dist.set(e[1],(dist.get(e[1])||0)+1);
     if(e[1]===1) first++;
+    if(e[3]===1) top3++;
   }
   $("cdStats").innerHTML=`<div class="cards">
-    <div class="card"><div class="v">${fmt(ranked)}</div><div class="l">Ranked ${name} (of ${fmt(idx.length)} in view)</div></div>
-    <div class="card"><div class="v">${pct(first,idx.length)}</div><div class="l">First-choice share in view</div></div>
-    <div class="card"><div class="v">${ranked?(rankSum/ranked).toFixed(2):"—"}</div><div class="l">Mean rank among rankers</div></div></div>`;
+    <div class="card"><div class="v">${fmt(ranked)}</div><div class="l">Ranked ${name} (of ${fmt(offered)} offered in view)</div></div>
+    <div class="card"><div class="v">${pct(first,offered)}</div><div class="l">First-choice share of those offered</div></div>
+    <div class="card"><div class="v">${pct(top3,offered)}</div><div class="l">Top-3 share of those offered</div></div>
+    <div class="card"><div class="v">${ranked?(rankSum/ranked).toFixed(2):"—"}</div><div class="l">Mean rank among rankers</div></div></div>
+    <p class="note">On the ballot in: ${ballotPolls("gop",name).join(", ")||"—"}. Shares are measured only over respondents in polls where ${name} was offered.</p>`;
   const maxRank=Math.max(0,...dist.keys());
   const labels=[], data=[];
   for(let r=1;r<=maxRank;r++){ labels.push("Rank "+r); data.push(dist.get(r)||0); }
   barChart("chCdRank", labels, data, {color:NAVY2});
   const tribes=[...new Set(idx.map(i=>R[i].primary_tribe))];
-  let html="<table><tr><th>Tribe</th><th>First-choice share</th><th>n</th></tr>";
+  let html="<table><tr><th>Tribe</th><th>First-choice share</th><th>Top-3 share</th><th>n offered</th></tr>";
   const trows=tribes.map(t=>{
     const members=idx.filter(i=>R[i].primary_tribe===t);
-    const f=members.filter(i=>R[i].gop_first_choice===name).length;
-    return {t, f, n:members.length, s:members.length?f/members.length:0};
+    const off=offeredIdx(members,"gop",name);
+    const f=off.filter(i=>R[i].gop_first_choice===name).length;
+    const t3=off.filter(i=>top3Names(i,"gop").includes(name)).length;
+    return {t, f, t3, n:off.length, s:off.length?f/off.length:0};
   }).sort((a,b)=>b.s-a.s);
-  for(const r of trows) html+=`<tr><td>${r.t}</td><td>${pct(r.f,r.n)}</td><td>${fmt(r.n)}</td></tr>`;
+  for(const r of trows) html+=`<tr><td>${r.t}</td><td>${pct(r.f,r.n)}</td><td>${pct(r.t3,r.n)}</td><td>${fmt(r.n)}</td></tr>`;
   html+="</table>";
   $("cdTribe").innerHTML=html;
 }
@@ -406,8 +487,10 @@ function renderMethods(){
   <ul>
     <li><b>Uniform recoding.</b> All three polls are coded under the same live 10-tribe model. The old Respondents table used a different historical approximation for Feb/Apr; 53 of 1,438 historical respondents change primary tribe under the uniform model (mostly into Traditional). August reproduces the live script exactly (180/180 affinity scores identical).</li>
     <li><b>Unranked picks.</b> Feb/Apr priorities were pick-up-to-4 sets with no ranking, so each pick carries equal weight. August picks were ranked 1–5 with weights 1.00 / 0.80 / 0.65 / 0.52 / 0.42.</li>
-    <li><b>Ideology.</b> February used a 1–5 scale, rescaled to 1–7 (1→1, 2→2, 3→4, 4→6, 5→7). April and August were already 1–7.</li>
+    <li><b>Ideology.</b> 1 = Very Liberal, 2 = Liberal, 3 = Somewhat Liberal, 4 = Moderate, 5 = Somewhat Conservative, 6 = Conservative, 7 = Very Conservative. February used a 1–5 scale with the same endpoints (1 Very Liberal, 3 Moderate, 5 Very Conservative), rescaled to 1–7 (1→1, 2→2, 3→4, 4→6, 5→7) so the labels line up. April and August were already 1–7. Hover any ideology bar for its label.</li>
     <li><b>Candidates.</b> All candidates as ranked are kept. Five February names (Bannon, Gabbard, Haley, Kemp, Ramaswamy) are flagged as outside the current field; the runoff tab can exclude them.</li>
+    <li><b>Top 3.</b> Every ranking row carries a <code>top3</code> flag (rank 1–3), and every respondent record lists their top-3 candidates. Top-3 share is reported as its own measure alongside first choice — in the current data Rubio leads on top-3 while Vance leads on first choice.</li>
+    <li><b>Dynamic denominators.</b> Every % for a candidate is measured only over respondents in polls where that candidate was on the ballot. February offered 12 GOP names, April 5, August 9 — so a February-only name is measured against February's 1,093 respondents, Hawley and Carlson against August's 19, and Vance against all 1,439. Poll-specific questions (tariffs, Senate, Iran) are likewise measured only over the poll that asked them. The per-poll ballot is recorded in <code>data/candidate_availability.json</code>.</li>
     <li><b>Ballot glitches.</b> Five ranking cells contained a stray “NaN” from JotForm (four trailing after a complete 12-rank Feb ballot; one mid-ballot TX glitch). The phantom entries were dropped and ranks compressed — no real preference was removed.</li>
     <li><b>Privacy.</b> This dashboard contains no names, emails, or IP addresses — only opaque submission IDs, states, and demographic bands.</li>
   </ul>`;
@@ -452,6 +535,11 @@ async function init(){
   ["fPoll","fFrom","fTo","fState","fGender","fAge"].forEach(id=>$(id).addEventListener("change",renderAll));
   ["ctRow","ctCol","ctMode"].forEach(id=>$(id).addEventListener("change",()=>renderCrosstab(filteredIdx())));
   $("irvField").addEventListener("change",()=>renderIRV(filteredIdx()));
+  document.querySelectorAll("#ovSeg button").forEach(b=>b.addEventListener("click",()=>{
+    ovMode=b.dataset.m;
+    document.querySelectorAll("#ovSeg button").forEach(x=>x.classList.toggle("on",x===b));
+    renderOverview(filteredIdx());
+  }));
   $("cdSel").addEventListener("change",()=>renderCandidate(filteredIdx()));
   $("fReset").addEventListener("click",()=>{
     ["fPoll","fState","fGender","fAge"].forEach(id=>$(id).value="");

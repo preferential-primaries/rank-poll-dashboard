@@ -9,9 +9,14 @@ presidential nomination (and related contests), built from JotForm exports.
 
 - `index.html` — the dashboard (static page; no build step)
 - `data/` — the unified dataset
-  - `respondents.json` — one record per respondent (1,439 as of Nov 20, 2026)
+  - `respondents.json` — one record per respondent (1,439 as of Nov 20, 2026),
+    including each respondent's top-3 candidates and worded ideology label
   - `gop_rankings.json`, `dem_rankings.json` — ranked ballots, by respondent
-  - `meta.json` — poll inventory, candidates, tribes, model note
+    (each entry carries a `top3` flag for ranks 1–3)
+  - `meta.json` — poll inventory, candidates, tribes, model note, and the
+    per-poll ballot (`gop_offered` / `dem_offered`)
+  - `candidate_availability.json` — which candidates each poll offered;
+    this drives the dashboard's per-candidate denominators
   - `unified_*.csv` — the same dataset in archival CSV form
 - `scripts/build_unified.py` — builds the unified dataset from raw JotForm
   exports (tribe coding, ideology rescaling, ranking normalization)
