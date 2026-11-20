@@ -1,0 +1,49 @@
+{
+ "gop": {
+  "Apr2026": [
+   "Other",
+   "Ron DeSantis",
+   "Ted Cruz",
+   "Marco Rubio",
+   "JD Vance"
+  ],
+  "Aug2026": [
+   "Marco Rubio",
+   "Ron DeSantis",
+   "Josh Hawley",
+   "Tucker Carlson",
+   "JD Vance",
+   "Glenn Youngkin",
+   "Ted Cruz",
+   "Donald Trump Jr.",
+   "Other"
+  ],
+  "Feb2026": [
+   "Ted Cruz",
+   "JD Vance",
+   "Marco Rubio",
+   "Ron DeSantis",
+   "Donald Trump Jr.",
+   "Glenn Youngkin",
+   "Nikki Haley",
+   "Steve Bannon",
+   "Tulsi Gabbard",
+   "Brian Kemp",
+   "Vivek Ramaswamy",
+   "Other"
+  ]
+ },
+ "dem": {
+  "Aug2026": [
+   "Kamala Harris",
+   "Josh Shapiro",
+   "Andy Beshear",
+   "J.B. Pritzker",
+   "Alexandria Ocasio-Cortez",
+   "Jon Ossoff",
+   "Gavin Newsom",
+   "Pete Buttigieg",
+   "Other"
+  ]
+ }
+}
